@@ -1,7 +1,5 @@
 # TorChat
 
-> Yet another p2p Tor Chat app
-
 I got bored one weekend and wanted to write a chat program. TorChat is a decentralized P2P chat application that operates over the Tor network using `.onion` addresses.
 
 ## Features
