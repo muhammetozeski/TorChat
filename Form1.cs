@@ -14,6 +14,7 @@ namespace Chat
         private P2PNode _node = null!;
         private bool _isDarkMode;
         private readonly List<ChatMessage> _messages = new();
+        private SecureRamKey? _mySecretKey;
 
         // TestBuild command injection
         private FileSystemWatcher? _cmdWatcher;
@@ -58,20 +59,71 @@ namespace Chat
             _node.OnMessageReceived += OnMessageReceived;
             Log("Node events subscribed.");
 
+            SecureRamKey? secretKey = null;
+            bool wantsNewKey = false;
+            bool saveNewKey = false;
+            string newKeyMode = "";
+            string newKeyPass = "";
+
+            Log("Showing StartupForm...");
+            using (var startupForm = new StartupForm())
+            {
+                if (startupForm.ShowDialog(this) == DialogResult.OK)
+                {
+                    secretKey = startupForm.ResultKey;
+                    wantsNewKey = startupForm.WantsNewKey;
+                    saveNewKey = startupForm.SaveNewKeyToSettings;
+                    newKeyMode = startupForm.NewKeyStorageMode;
+                    newKeyPass = startupForm.NewKeyPassword;
+                }
+                else
+                {
+                    Log("StartupForm closed without OK. Exiting.");
+                    Application.Exit();
+                    return;
+                }
+            }
+
             try
             {
                 Log("Updating status label to 'Durum: Tor baslatiliyor...'...");
-                lblStatus.Text = "Durum: Tor baslatiliyor...";
-                Log("Executing _node.StartAsync() asynchronously...");
-                await _node.StartAsync();
+                lblStatus.Text = "Durum: Tor başlatılıyor...";
+                Log("Executing _node.StartAsync(secretKey) asynchronously...");
+                await _node.StartAsync(secretKey);
                 Log("_node.StartAsync() returned successfully. Updating status label to 'Durum: Tor aga baglaniliyor...'...");
-                lblStatus.Text = "Durum: Tor aga baglaniliyor...";
+                lblStatus.Text = "Durum: Tor ağa bağlanılıyor...";
+
+                _mySecretKey = secretKey ?? _node.GeneratedKey;
+
+                if (wantsNewKey && saveNewKey)
+                {
+                    var newKey = _node.GeneratedKey;
+                    if (newKey != null)
+                    {
+                        string b64 = newKey.GetBase64();
+                        string encryptedBase64 = b64;
+
+                        if (newKeyMode == "DPAPI")
+                        {
+                            encryptedBase64 = CryptographyHelpers.ProtectWithDpapi(b64);
+                        }
+                        else if (newKeyMode == "Type1")
+                        {
+                            encryptedBase64 = CryptographyHelpers.ProtectWithType1(b64, newKeyPass);
+                        }
+
+                        Chat.Models.Settings.SecretStorageMode.Value = newKeyMode;
+                        Chat.Models.Settings.DefaultSecret.Value = encryptedBase64;
+                        Chat.Models.Settings.SecretFilePath.Value = "";
+                        Chat.Stores.SettingsManager.SaveSettings();
+                    }
+                }
             }
             catch (Exception ex)
             {
                 Log($"[FATAL] Startup error in Form1_Load: {ex.GetType().Name} - {ex.Message}", LogLevel.Error);
-                lblStatus.Text = "Durum: Tor baslatilamadi!";
-                MessageBox.Show("Tor baslatilamadi: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblStatus.Text = "Durum: Tor başlatılamadı!";
+                MessageBox.Show("Tor başlatılamadı: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             Log("[END] Form1_Load event handler completed.");
@@ -315,7 +367,7 @@ namespace Chat
             if (!onion.EndsWith(".onion"))
             {
                 Log("[WARNING] Target onion validation failed! Missing .onion suffix.", LogLevel.Warning);
-                MessageBox.Show("Gecerli bir .onion adresi girin.", "Uyari", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Geçerli bir .onion adresi girin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -323,7 +375,7 @@ namespace Chat
             btnConnect.Enabled = false;
             btnCancelConnect.Enabled = true;
             btnCancelConnect.Tag = onion;
-            lblStatus.Text = $"Durum: {onion[..Math.Min(8, onion.Length)]}... adresine baglaniliyor...";
+            lblStatus.Text = $"Durum: {onion[..Math.Min(8, onion.Length)]}... adresine bağlanılıyor...";
 
             Log($"Spawning background task for ConnectToPeerAsync('{onion}')...");
             _ = Task.Run(async () =>
@@ -347,7 +399,7 @@ namespace Chat
                             if (btnCancelConnect.Tag?.ToString() == onion)
                             {
                                 Log("Resetting UI controls state after connection attempt completion...");
-                                lblStatus.Text = "Durum: Baglanti istegi tamamlandi.";
+                                lblStatus.Text = "Durum: Bağlantı isteği tamamlandı.";
                                 btnCancelConnect.Enabled = false;
                                 btnConnect.Enabled = true;
                                 btnCancelConnect.Tag = null;
@@ -371,7 +423,7 @@ namespace Chat
                 {
                     Log($"Invoking CancelConnection for onion '{onion}'...");
                     _node.CancelConnection(onion);
-                    lblStatus.Text = $"Durum: Baglanti iptal edildi ({onion[..Math.Min(8, onion.Length)]}...)";
+                    lblStatus.Text = $"Durum: Bağlantı iptal edildi ({onion[..Math.Min(8, onion.Length)]}...)";
                     btnCancelConnect.Enabled = false;
                     btnConnect.Enabled = true;
                     btnCancelConnect.Tag = null;
@@ -472,7 +524,7 @@ namespace Chat
                 }
 
                 Log("Instantiating ProfileForm for local profile...");
-                var form = new ProfileForm(_node.MyProfile, isMe: true, connectedAt: _node.ConnectedAt);
+                var form = new ProfileForm(_node.MyProfile, isMe: true, connectedAt: _node.ConnectedAt, myKey: _mySecretKey);
                 form.OnSave += async (name, bio) =>
                 {
                     Log($"ProfileForm OnSave triggered: Name='{name}', Bio='{bio}'. Calling UpdateProfileAsync...");

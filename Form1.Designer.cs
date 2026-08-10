@@ -17,195 +17,206 @@ namespace Chat
 
         private void InitializeComponent()
         {
-            this.txtTargetOnion = new System.Windows.Forms.TextBox();
-            this.btnConnect = new System.Windows.Forms.Button();
-            this.rtbChat = new System.Windows.Forms.RichTextBox();
-            this.txtMessage = new System.Windows.Forms.TextBox();
-            this.btnSend = new System.Windows.Forms.Button();
-            this.lstPeers = new System.Windows.Forms.ListBox();
-            this.btnMyProfile = new System.Windows.Forms.Button();
-            this.lblStatus = new System.Windows.Forms.Label();
-            this.lblPeers = new System.Windows.Forms.Label();
-            this.btnTheme = new System.Windows.Forms.Button();
-            this.btnCancelConnect = new System.Windows.Forms.Button();
-            this.btnCopyOnion = new System.Windows.Forms.Button();
-            this.btnReconnect = new System.Windows.Forms.Button();
-            this.lblOfflinePeers = new System.Windows.Forms.Label();
-            this.lstOfflinePeers = new System.Windows.Forms.ListBox();
-            this.SuspendLayout();
+            txtTargetOnion = new TextBox();
+            btnConnect = new Button();
+            rtbChat = new RichTextBox();
+            txtMessage = new TextBox();
+            btnSend = new Button();
+            lstPeers = new ListBox();
+            btnMyProfile = new Button();
+            lblStatus = new Label();
+            lblPeers = new Label();
+            btnTheme = new Button();
+            btnCancelConnect = new Button();
+            btnCopyOnion = new Button();
+            btnReconnect = new Button();
+            lblOfflinePeers = new Label();
+            lstOfflinePeers = new ListBox();
+            SuspendLayout();
             // 
             // txtTargetOnion
             // 
-            this.txtTargetOnion.Location = new System.Drawing.Point(12, 12);
-            this.txtTargetOnion.Name = "txtTargetOnion";
-            this.txtTargetOnion.PlaceholderText = "Bağlanmak için .onion adresi girin...";
-            this.txtTargetOnion.Size = new System.Drawing.Size(200, 23);
-            this.txtTargetOnion.TabIndex = 0;
+            txtTargetOnion.Location = new Point(14, 16);
+            txtTargetOnion.Margin = new Padding(3, 4, 3, 4);
+            txtTargetOnion.Name = "txtTargetOnion";
+            txtTargetOnion.PlaceholderText = "Bağlanmak için .onion adresi girin...";
+            txtTargetOnion.Size = new Size(228, 27);
+            txtTargetOnion.TabIndex = 0;
             // 
             // btnConnect
             // 
-            this.btnConnect.Location = new System.Drawing.Point(218, 11);
-            this.btnConnect.Name = "btnConnect";
-            this.btnConnect.Size = new System.Drawing.Size(55, 25);
-            this.btnConnect.TabIndex = 1;
-            this.btnConnect.Text = "Bağlan";
-            this.btnConnect.UseVisualStyleBackColor = true;
-            this.btnConnect.Click += new System.EventHandler(this.btnConnect_Click);
-            // 
-            // btnCancelConnect
-            // 
-            this.btnCancelConnect.Location = new System.Drawing.Point(278, 11);
-            this.btnCancelConnect.Name = "btnCancelConnect";
-            this.btnCancelConnect.Size = new System.Drawing.Size(50, 25);
-            this.btnCancelConnect.TabIndex = 10;
-            this.btnCancelConnect.Text = "İptal";
-            this.btnCancelConnect.Enabled = false;
-            this.btnCancelConnect.UseVisualStyleBackColor = true;
-            this.btnCancelConnect.Click += new System.EventHandler(this.btnCancelConnect_Click);
-            // 
-            // btnCopyOnion
-            // 
-            this.btnCopyOnion.Location = new System.Drawing.Point(333, 11);
-            this.btnCopyOnion.Name = "btnCopyOnion";
-            this.btnCopyOnion.Size = new System.Drawing.Size(95, 25);
-            this.btnCopyOnion.TabIndex = 11;
-            this.btnCopyOnion.Text = "Onion Kopyala";
-            this.btnCopyOnion.UseVisualStyleBackColor = true;
-            this.btnCopyOnion.Click += new System.EventHandler(this.btnCopyOnion_Click);
-            // 
-            // btnReconnect
-            // 
-            this.btnReconnect.Location = new System.Drawing.Point(433, 11);
-            this.btnReconnect.Name = "btnReconnect";
-            this.btnReconnect.Size = new System.Drawing.Size(95, 25);
-            this.btnReconnect.TabIndex = 12;
-            this.btnReconnect.Text = "Yeniden Bağlan";
-            this.btnReconnect.UseVisualStyleBackColor = true;
-            this.btnReconnect.Click += new System.EventHandler(this.btnReconnect_Click);
-            // 
-            // btnMyProfile
-            // 
-            this.btnMyProfile.Location = new System.Drawing.Point(533, 11);
-            this.btnMyProfile.Name = "btnMyProfile";
-            this.btnMyProfile.Size = new System.Drawing.Size(80, 25);
-            this.btnMyProfile.TabIndex = 2;
-            this.btnMyProfile.Text = "Profilim";
-            this.btnMyProfile.UseVisualStyleBackColor = true;
-            this.btnMyProfile.Click += new System.EventHandler(this.btnMyProfile_Click);
-            // 
-            // btnTheme
-            // 
-            this.btnTheme.Location = new System.Drawing.Point(618, 11);
-            this.btnTheme.Name = "btnTheme";
-            this.btnTheme.Size = new System.Drawing.Size(75, 25);
-            this.btnTheme.TabIndex = 3;
-            this.btnTheme.Text = "Tema";
-            this.btnTheme.UseVisualStyleBackColor = true;
-            this.btnTheme.Click += new System.EventHandler(this.btnTheme_Click);
+            btnConnect.Location = new Point(249, 15);
+            btnConnect.Margin = new Padding(3, 4, 3, 4);
+            btnConnect.Name = "btnConnect";
+            btnConnect.Size = new Size(63, 33);
+            btnConnect.TabIndex = 1;
+            btnConnect.Text = "Bağlan";
+            btnConnect.UseVisualStyleBackColor = true;
+            btnConnect.Click += btnConnect_Click;
             // 
             // rtbChat
             // 
-            this.rtbChat.Location = new System.Drawing.Point(12, 42);
-            this.rtbChat.Name = "rtbChat";
-            this.rtbChat.ReadOnly = true;
-            this.rtbChat.Size = new System.Drawing.Size(516, 360);
-            this.rtbChat.TabIndex = 4;
-            this.rtbChat.Text = "";
-            // 
-            // lblPeers
-            // 
-            this.lblPeers.AutoSize = true;
-            this.lblPeers.Location = new System.Drawing.Point(536, 42);
-            this.lblPeers.Name = "lblPeers";
-            this.lblPeers.Size = new System.Drawing.Size(125, 15);
-            this.lblPeers.TabIndex = 5;
-            this.lblPeers.Text = "Ağdaki Kişiler";
-            // 
-            // lstPeers
-            // 
-            this.lstPeers.FormattingEnabled = true;
-            this.lstPeers.ItemHeight = 15;
-            this.lstPeers.Location = new System.Drawing.Point(536, 60);
-            this.lstPeers.Name = "lstPeers";
-            this.lstPeers.Size = new System.Drawing.Size(171, 180);
-            this.lstPeers.TabIndex = 6;
-            this.lstPeers.DoubleClick += new System.EventHandler(this.lstPeers_DoubleClick);
-            // 
-            // lblOfflinePeers
-            // 
-            this.lblOfflinePeers.AutoSize = true;
-            this.lblOfflinePeers.Location = new System.Drawing.Point(536, 245);
-            this.lblOfflinePeers.Name = "lblOfflinePeers";
-            this.lblOfflinePeers.Size = new System.Drawing.Size(100, 15);
-            this.lblOfflinePeers.TabIndex = 13;
-            this.lblOfflinePeers.Text = "Çevrimdışı Kişiler";
-            // 
-            // lstOfflinePeers
-            // 
-            this.lstOfflinePeers.FormattingEnabled = true;
-            this.lstOfflinePeers.ItemHeight = 15;
-            this.lstOfflinePeers.Location = new System.Drawing.Point(536, 263);
-            this.lstOfflinePeers.Name = "lstOfflinePeers";
-            this.lstOfflinePeers.Size = new System.Drawing.Size(171, 130);
-            this.lstOfflinePeers.TabIndex = 14;
-            this.lstOfflinePeers.DoubleClick += new System.EventHandler(this.lstOfflinePeers_DoubleClick);
+            rtbChat.Location = new Point(14, 56);
+            rtbChat.Margin = new Padding(3, 4, 3, 4);
+            rtbChat.Name = "rtbChat";
+            rtbChat.ReadOnly = true;
+            rtbChat.Size = new Size(589, 479);
+            rtbChat.TabIndex = 4;
+            rtbChat.Text = "";
             // 
             // txtMessage
             // 
-            this.txtMessage.Location = new System.Drawing.Point(12, 408);
-            this.txtMessage.Name = "txtMessage";
-            this.txtMessage.PlaceholderText = "Bir mesaj yazın...";
-            this.txtMessage.Size = new System.Drawing.Size(435, 23);
-            this.txtMessage.TabIndex = 7;
-            this.txtMessage.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtMessage_KeyDown);
+            txtMessage.Location = new Point(14, 544);
+            txtMessage.Margin = new Padding(3, 4, 3, 4);
+            txtMessage.Name = "txtMessage";
+            txtMessage.PlaceholderText = "Bir mesaj yazın...";
+            txtMessage.Size = new Size(497, 27);
+            txtMessage.TabIndex = 7;
+            txtMessage.KeyDown += txtMessage_KeyDown;
             // 
             // btnSend
             // 
-            this.btnSend.Location = new System.Drawing.Point(453, 407);
-            this.btnSend.Name = "btnSend";
-            this.btnSend.Size = new System.Drawing.Size(75, 25);
-            this.btnSend.TabIndex = 8;
-            this.btnSend.Text = "Gönder";
-            this.btnSend.UseVisualStyleBackColor = true;
-            this.btnSend.Click += new System.EventHandler(this.btnSend_Click);
+            btnSend.Location = new Point(518, 543);
+            btnSend.Margin = new Padding(3, 4, 3, 4);
+            btnSend.Name = "btnSend";
+            btnSend.Size = new Size(86, 33);
+            btnSend.TabIndex = 8;
+            btnSend.Text = "Gönder";
+            btnSend.UseVisualStyleBackColor = true;
+            btnSend.Click += btnSend_Click;
+            // 
+            // lstPeers
+            // 
+            lstPeers.FormattingEnabled = true;
+            lstPeers.Location = new Point(613, 80);
+            lstPeers.Margin = new Padding(3, 4, 3, 4);
+            lstPeers.Name = "lstPeers";
+            lstPeers.Size = new Size(195, 224);
+            lstPeers.TabIndex = 6;
+            lstPeers.DoubleClick += lstPeers_DoubleClick;
+            // 
+            // btnMyProfile
+            // 
+            btnMyProfile.Location = new Point(632, 15);
+            btnMyProfile.Margin = new Padding(3, 4, 3, 4);
+            btnMyProfile.Name = "btnMyProfile";
+            btnMyProfile.Size = new Size(91, 33);
+            btnMyProfile.TabIndex = 2;
+            btnMyProfile.Text = "Profilim";
+            btnMyProfile.UseVisualStyleBackColor = true;
+            btnMyProfile.Click += btnMyProfile_Click;
             // 
             // lblStatus
             // 
-            this.lblStatus.AutoSize = true;
-            this.lblStatus.Location = new System.Drawing.Point(12, 438);
-            this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(127, 15);
-            this.lblStatus.TabIndex = 9;
-            this.lblStatus.Text = "Durum: Tor bekleniyor...";
+            lblStatus.AutoSize = true;
+            lblStatus.Location = new Point(14, 584);
+            lblStatus.Name = "lblStatus";
+            lblStatus.Size = new Size(164, 20);
+            lblStatus.TabIndex = 9;
+            lblStatus.Text = "Durum: Tor bekleniyor...";
+            // 
+            // lblPeers
+            // 
+            lblPeers.AutoSize = true;
+            lblPeers.Location = new Point(613, 56);
+            lblPeers.Name = "lblPeers";
+            lblPeers.Size = new Size(100, 20);
+            lblPeers.TabIndex = 5;
+            lblPeers.Text = "Ağdaki Kişiler";
+            // 
+            // btnTheme
+            // 
+            btnTheme.Location = new Point(729, 15);
+            btnTheme.Margin = new Padding(3, 4, 3, 4);
+            btnTheme.Name = "btnTheme";
+            btnTheme.Size = new Size(86, 33);
+            btnTheme.TabIndex = 3;
+            btnTheme.Text = "Tema";
+            btnTheme.UseVisualStyleBackColor = true;
+            btnTheme.Click += btnTheme_Click;
+            // 
+            // btnCancelConnect
+            // 
+            btnCancelConnect.Enabled = false;
+            btnCancelConnect.Location = new Point(318, 15);
+            btnCancelConnect.Margin = new Padding(3, 4, 3, 4);
+            btnCancelConnect.Name = "btnCancelConnect";
+            btnCancelConnect.Size = new Size(57, 33);
+            btnCancelConnect.TabIndex = 10;
+            btnCancelConnect.Text = "İptal";
+            btnCancelConnect.UseVisualStyleBackColor = true;
+            btnCancelConnect.Click += btnCancelConnect_Click;
+            // 
+            // btnCopyOnion
+            // 
+            btnCopyOnion.Location = new Point(381, 15);
+            btnCopyOnion.Margin = new Padding(3, 4, 3, 4);
+            btnCopyOnion.Name = "btnCopyOnion";
+            btnCopyOnion.Size = new Size(115, 33);
+            btnCopyOnion.TabIndex = 11;
+            btnCopyOnion.Text = "Onion Kopyala";
+            btnCopyOnion.UseVisualStyleBackColor = true;
+            btnCopyOnion.Click += btnCopyOnion_Click;
+            // 
+            // btnReconnect
+            // 
+            btnReconnect.Location = new Point(502, 15);
+            btnReconnect.Margin = new Padding(3, 4, 3, 4);
+            btnReconnect.Name = "btnReconnect";
+            btnReconnect.Size = new Size(125, 33);
+            btnReconnect.TabIndex = 12;
+            btnReconnect.Text = "Yeniden Bağlan";
+            btnReconnect.UseVisualStyleBackColor = true;
+            btnReconnect.Click += btnReconnect_Click;
+            // 
+            // lblOfflinePeers
+            // 
+            lblOfflinePeers.AutoSize = true;
+            lblOfflinePeers.Location = new Point(613, 327);
+            lblOfflinePeers.Name = "lblOfflinePeers";
+            lblOfflinePeers.Size = new Size(122, 20);
+            lblOfflinePeers.TabIndex = 13;
+            lblOfflinePeers.Text = "Çevrimdışı Kişiler";
+            // 
+            // lstOfflinePeers
+            // 
+            lstOfflinePeers.FormattingEnabled = true;
+            lstOfflinePeers.Location = new Point(613, 351);
+            lstOfflinePeers.Margin = new Padding(3, 4, 3, 4);
+            lstOfflinePeers.Name = "lstOfflinePeers";
+            lstOfflinePeers.Size = new Size(195, 164);
+            lstOfflinePeers.TabIndex = 14;
+            lstOfflinePeers.DoubleClick += lstOfflinePeers_DoubleClick;
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(719, 461);
-            this.Controls.Add(this.lblOfflinePeers);
-            this.Controls.Add(this.lstOfflinePeers);
-            this.Controls.Add(this.lblStatus);
-            this.Controls.Add(this.btnSend);
-            this.Controls.Add(this.txtMessage);
-            this.Controls.Add(this.lstPeers);
-            this.Controls.Add(this.lblPeers);
-            this.Controls.Add(this.rtbChat);
-            this.Controls.Add(this.btnTheme);
-            this.Controls.Add(this.btnMyProfile);
-            this.Controls.Add(this.btnConnect);
-            this.Controls.Add(this.btnCopyOnion);
-            this.Controls.Add(this.btnReconnect);
-            this.Controls.Add(this.btnCancelConnect);
-            this.Controls.Add(this.txtTargetOnion);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.MaximizeBox = false;
-            this.Name = "Form1";
-            this.Text = "Tor P2P Grup Chat";
-            this.Load += new System.EventHandler(this.Form1_Load);
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(822, 615);
+            Controls.Add(lblOfflinePeers);
+            Controls.Add(lstOfflinePeers);
+            Controls.Add(lblStatus);
+            Controls.Add(btnSend);
+            Controls.Add(txtMessage);
+            Controls.Add(lstPeers);
+            Controls.Add(lblPeers);
+            Controls.Add(rtbChat);
+            Controls.Add(btnTheme);
+            Controls.Add(btnMyProfile);
+            Controls.Add(btnConnect);
+            Controls.Add(btnCopyOnion);
+            Controls.Add(btnReconnect);
+            Controls.Add(btnCancelConnect);
+            Controls.Add(txtTargetOnion);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            Margin = new Padding(3, 4, 3, 4);
+            MaximizeBox = false;
+            Name = "Form1";
+            Text = "Tor P2P Grup Chat";
+            FormClosing += Form1_FormClosing;
+            Load += Form1_Load;
+            ResumeLayout(false);
+            PerformLayout();
 
         }
 

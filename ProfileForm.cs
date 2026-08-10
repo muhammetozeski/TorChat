@@ -13,7 +13,7 @@ namespace Chat
 
         public event Action<string, string>? OnSave;
 
-        public ProfileForm(PeerInfo profile, bool isMe, DateTime? connectedAt = null)
+        public ProfileForm(PeerInfo profile, bool isMe, DateTime? connectedAt = null, SecureRamKey? myKey = null)
         {
             Log($"[START] ProfileForm constructor started. IsMe={isMe}, OnionAddress='{profile.OnionAddress}', Username='{profile.Username}', Bio='{profile.Bio}', ConnectedAt='{connectedAt}'");
             _isMe = isMe;
@@ -38,13 +38,13 @@ namespace Chat
                 if (isMe)
                 {
                     Log("Creating Opening Time controls...");
-                    Controls.Add(new Label { Text = "Acilis:", Location = new Point(10, yOffset), AutoSize = true });
+                    Controls.Add(new Label { Text = "Açılış:", Location = new Point(10, yOffset), AutoSize = true });
                     Controls.Add(new TextBox { Text = Logger.startTime, Location = new Point(100, yOffset - 3), Width = 220, ReadOnly = true });
                     yOffset += 30;
 
                     Log("Creating Connection Time controls...");
-                    Controls.Add(new Label { Text = "Baglanti:", Location = new Point(10, yOffset), AutoSize = true });
-                    string connStr = connectedAt.HasValue ? connectedAt.Value.ToString("dd.MM.yyyy HH:mm:ss") : "Henuz baglanmadi";
+                    Controls.Add(new Label { Text = "Bağlantı:", Location = new Point(10, yOffset), AutoSize = true });
+                    string connStr = connectedAt.HasValue ? connectedAt.Value.ToString("dd.MM.yyyy HH:mm:ss") : "Henüz bağlanmadı";
                     Controls.Add(new TextBox { Text = connStr, Location = new Point(100, yOffset - 3), Width = 220, ReadOnly = true });
                     yOffset += 30;
                 }
@@ -56,7 +56,7 @@ namespace Chat
                 yOffset += 30;
 
                 Log("Creating Bio controls...");
-                Controls.Add(new Label { Text = "Hakkimda:", Location = new Point(10, yOffset), AutoSize = true });
+                Controls.Add(new Label { Text = "Hakkımda:", Location = new Point(10, yOffset), AutoSize = true });
                 _txtBio = new TextBox { Text = profile.Bio, Location = new Point(100, yOffset - 3), Width = 220, Height = 60, Multiline = true, ReadOnly = !isMe };
                 Controls.Add(_txtBio);
                 yOffset += 70;
@@ -78,7 +78,7 @@ namespace Chat
                             if (string.IsNullOrWhiteSpace(nameTrimmed))
                             {
                                 Log("[WARNING] Username validation failed: Empty or whitespace.", LogLevel.Warning);
-                                MessageBox.Show("Ad bos olamaz.", "Uyari", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                MessageBox.Show("Ad boş olamaz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                 return;
                             }
                             Log("Username validation passed.");
@@ -99,13 +99,31 @@ namespace Chat
                     };
                     Controls.Add(btnSave);
                     Log("btnSave added to Controls.");
+
+                    if (myKey != null)
+                    {
+                        var btnShowKey = new Button { Text = "Anahtarı Göster", Location = new Point(10, yOffset), Width = 110 };
+                        btnShowKey.Click += (_, _) =>
+                        {
+                            try
+                            {
+                                string base64 = myKey.GetBase64();
+                                MessageBox.Show(base64, "Gizli Anahtar (Base64)", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("Anahtar okunamadı: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        };
+                        Controls.Add(btnShowKey);
+                    }
                 }
                 else
                 {
                     Log($"IsMe is false. Creating status label (IsOnline={profile.IsOnline}, LastSeen={profile.LastSeen:HH:mm})...");
                     Controls.Add(new Label
                     {
-                        Text = profile.IsOnline ? "Cevrimici" : $"Cevrimdisi ({profile.LastSeen:HH:mm})",
+                        Text = profile.IsOnline ? "Çevrimiçi" : $"Çevrimdışı ({profile.LastSeen:HH:mm})",
                         Location = new Point(10, 150),
                         AutoSize = true,
                         ForeColor = profile.IsOnline ? Color.Green : Color.Gray

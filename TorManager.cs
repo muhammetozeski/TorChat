@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 using Polly;
 
@@ -12,34 +13,37 @@ namespace Chat
     {
         public int SocksPort { get; }
         public int LocalTcpPort { get; }
+        public int ControlPort { get; }
         public string? OnionAddress { get; private set; }
 
-        private readonly string _dataDir;
+        private readonly string _dataDir = string.Empty;
         private Process? _torProcess;
+        public SecureRamKey? GeneratedKey { get; private set; }
 
         public event Action<string>? OnLog;
         public event Action<string>? OnReady;
+
+        public enum LogLevel { Info, Warning, Error }
+
+        private void Log(string message, LogLevel level = LogLevel.Info)
+        {
+            System.Diagnostics.Debug.WriteLine($"[{level}] {message}");
+        }
 
         public TorManager()
         {
             Log("[START] TorManager constructor started.");
 
-            Log("Allocating SocksPort...");
             SocksPort = AllocatePort();
-            Log($"SocksPort allocated successfully: {SocksPort}");
-
-            Log("Allocating LocalTcpPort...");
             LocalTcpPort = AllocatePort();
-            Log($"LocalTcpPort allocated successfully: {LocalTcpPort}");
+            ControlPort = AllocatePort();
 
-            Log($"Finding available DataDir slot starting from InstanceId '{Program.InstanceId}'...");
             int slotId = int.Parse(Program.InstanceId);
             bool slotFound = false;
 
             while (!slotFound)
             {
                 _dataDir = Path.Combine(Path.GetTempPath(), $"TorChat_Data_{slotId}");
-                Log($"Checking DataDir slot: '{_dataDir}'...");
                 Directory.CreateDirectory(_dataDir);
 
                 string pidFile = Path.Combine(_dataDir, "tor.pid");
@@ -58,38 +62,36 @@ namespace Chat
 
                         if (isAlive)
                         {
-                            Log($"Slot {slotId} is in use by PID {oldPid}. Trying next slot...");
                             slotId++;
                             continue;
                         }
                     }
                 }
 
-                // Slot available: old process is dead or no PID file exists
-                // Delete hs/ to force fresh onion address generation
+                // Slot available
                 string hsCleanup = Path.Combine(_dataDir, "hs");
                 if (Directory.Exists(hsCleanup))
                 {
-                    Log($"Deleting stale hs/ directory at '{hsCleanup}' to generate fresh onion address...");
                     Directory.Delete(hsCleanup, true);
                 }
 
-                // Delete stale lock file if present
                 string lockFile = Path.Combine(_dataDir, "lock");
                 if (File.Exists(lockFile))
                 {
-                    Log($"Deleting stale lock file at '{lockFile}'...");
                     File.Delete(lockFile);
+                }
+                
+                string cookieFile = Path.Combine(_dataDir, "control_auth_cookie");
+                if (File.Exists(cookieFile))
+                {
+                    File.Delete(cookieFile);
                 }
 
                 slotFound = true;
-                Log($"DataDir slot {slotId} is available. Using '{_dataDir}'.");
             }
-
-            Log($"[END] TorManager constructor finished. SocksPort={SocksPort}, LocalTcpPort={LocalTcpPort}, DataDir='{_dataDir}'");
         }
 
-        public Task StartAsync()
+        public Task StartAsync(SecureRamKey? secretKey)
         {
             Log("[START] TorManager.StartAsync started.");
 
@@ -106,29 +108,19 @@ namespace Chat
             {
                 ioPolicy.Execute(() =>
                 {
-                    string hsDir = Path.Combine(_dataDir, "hs");
-                    Log($"HiddenService directory path: '{hsDir}'. Creating directory...");
-                    Directory.CreateDirectory(hsDir);
-                    Log($"HiddenService directory created: '{hsDir}'");
-
                     string torrcPath = Path.Combine(_dataDir, "torrc");
-                    Log($"torrc path: '{torrcPath}'. Formatting torrc configuration content...");
-
                     string torrc = string.Join('\n',
                         $"SocksPort 127.0.0.1:{SocksPort}",
+                        $"ControlPort 127.0.0.1:{ControlPort}",
+                        "CookieAuthentication 1",
                         "SocksTimeout 20",
-                        $"HiddenServiceDir \"{hsDir.Replace('\\', '/')}\"",
-                        $"HiddenServicePort 80 127.0.0.1:{LocalTcpPort}",
                         "Log notice stdout",
                         $"DataDirectory \"{_dataDir.Replace('\\', '/')}\"");
 
-                    Log($"Writing torrc configuration to '{torrcPath}' (Content Length: {torrc.Length} chars)...");
                     File.WriteAllText(torrcPath, torrc);
-                    Log($"torrc written successfully:\n{torrc}");
                 });
 
                 string torrcFile = Path.Combine(_dataDir, "torrc");
-                Log("Initializing Tor Process instance...");
                 _torProcess = new Process();
                 _torProcess.StartInfo = new ProcessStartInfo
                 {
@@ -139,7 +131,6 @@ namespace Chat
                     RedirectStandardError = true,
                     CreateNoWindow = true
                 };
-                Log($"Tor process StartInfo configured (FileName='tor', Arguments='{_torProcess.StartInfo.Arguments}')");
 
                 _torProcess.OutputDataReceived += (_, e) =>
                 {
@@ -163,7 +154,6 @@ namespace Chat
                     }
                 };
 
-                Log("Starting Tor process execution...");
                 var processPolicy = Policy
                     .Handle<InvalidOperationException>()
                     .Or<System.ComponentModel.Win32Exception>()
@@ -178,19 +168,14 @@ namespace Chat
                     _torProcess.Start();
                 });
 
-                Log($"Tor process started successfully with PID={_torProcess.Id}. Enabling output & error line reading...");
                 _torProcess.BeginOutputReadLine();
                 _torProcess.BeginErrorReadLine();
 
                 string torPidFile = Path.Combine(_dataDir, "tor.pid");
                 File.WriteAllText(torPidFile, _torProcess.Id.ToString());
-                Log($"Wrote Tor PID {_torProcess.Id} to '{torPidFile}'.");
 
-                string hsFolder = Path.Combine(_dataDir, "hs");
-                Log("Spawning background ReadOnionAddressAsync watcher immediately...");
-                _ = ReadOnionAddressAsync(hsFolder);
-
-                Log("[END] TorManager.StartAsync completed successfully.");
+                // Spawn background task to connect to ControlPort
+                _ = ConnectControlPortAsync(secretKey);
             }
             catch (Exception ex)
             {
@@ -201,53 +186,121 @@ namespace Chat
             return Task.CompletedTask;
         }
 
-        private async Task ReadOnionAddressAsync(string hsDir)
+        private async Task ConnectControlPortAsync(SecureRamKey? secretKey)
         {
-            Log($"[START] ReadOnionAddressAsync started for HiddenService dir: '{hsDir}'");
-            string hostnameFile = Path.Combine(hsDir, "hostname");
-            Log($"Hostname file path: '{hostnameFile}'");
-
+            string cookieFile = Path.Combine(_dataDir, "control_auth_cookie");
+            
             var fileReadPolicy = Policy
                 .Handle<IOException>()
                 .Or<UnauthorizedAccessException>()
-                .WaitAndRetryAsync(5, attempt => TimeSpan.FromMilliseconds(200 * attempt),
+                .WaitAndRetryAsync(10, attempt => TimeSpan.FromMilliseconds(500 * attempt),
                     (ex, span, attempt, ctx) =>
                     {
-                        Log($"[RETRY] Reading hostname file attempt {attempt} failed: {ex.Message}", LogLevel.Warning);
+                        Log($"[RETRY] Reading cookie file attempt {attempt} failed: {ex.Message}", LogLevel.Warning);
                     });
 
+            byte[]? cookie = null;
             for (int i = 0; i < 30; i++)
             {
-                Log($"Checking existence of hostname file '{hostnameFile}' (Attempt {i + 1}/30)...");
-                if (File.Exists(hostnameFile))
+                if (File.Exists(cookieFile))
                 {
-                    Log($"Hostname file exists. Executing Polly read policy...");
                     try
                     {
-                        string rawAddress = await fileReadPolicy.ExecuteAsync(async () =>
-                        {
-                            return await File.ReadAllTextAsync(hostnameFile);
-                        });
-
-                        Log($"Raw address read from file: '{rawAddress}'. Trimming...");
-                        OnionAddress = rawAddress.Trim();
-                        Log($"OnionAddress set to '{OnionAddress}'. Invoking OnReady event...");
-                        OnReady?.Invoke(OnionAddress);
-                        Log("OnReady event invoked successfully.");
-                        Log($"[END] ReadOnionAddressAsync completed successfully for OnionAddress='{OnionAddress}'");
-                        return;
+                        cookie = await fileReadPolicy.ExecuteAsync(async () => await File.ReadAllBytesAsync(cookieFile));
+                        break;
                     }
-                    catch (Exception ex)
-                    {
-                        Log($"[ERROR] Failed reading hostname file on attempt {i + 1}: {ex.Message}", LogLevel.Error);
-                    }
+                    catch { }
                 }
-
-                Log($"Hostname file not ready yet on attempt {i + 1}. Delaying 1000ms...");
                 await Task.Delay(1000);
             }
 
-            Log("[FATAL] ReadOnionAddressAsync failed to read onion address after 30 seconds limit reached.", LogLevel.Error);
+            if (cookie == null)
+            {
+                Log("[FATAL] Could not read Tor control cookie.", LogLevel.Error);
+                return;
+            }
+
+            string hexCookie = Convert.ToHexString(cookie);
+
+            try
+            {
+                using var client = new TcpClient();
+                await client.ConnectAsync(IPAddress.Loopback, ControlPort);
+                using var stream = client.GetStream();
+                using var reader = new StreamReader(stream, Encoding.ASCII);
+                using var writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true };
+
+                await writer.WriteLineAsync($"AUTHENTICATE {hexCookie}");
+                string? authResponse = await reader.ReadLineAsync();
+                if (authResponse == null || !authResponse.StartsWith("250"))
+                {
+                    Log($"[FATAL] ControlPort auth failed: {authResponse}", LogLevel.Error);
+                    return;
+                }
+
+                string keyArg = "NEW:ED25519-V3";
+                if (secretKey != null)
+                {
+                    string base64 = secretKey.GetBase64();
+                    if (!string.IsNullOrEmpty(base64))
+                    {
+                        keyArg = $"ED25519-V3:{base64}";
+                    }
+                }
+
+                await writer.WriteLineAsync($"ADD_ONION {keyArg} Port=80,127.0.0.1:{LocalTcpPort}");
+
+                string newKeyBase64 = "";
+                string serviceId = "";
+                
+                while (true)
+                {
+                    string? line = await reader.ReadLineAsync();
+                    if (line == null) break;
+                    
+                    if (line.StartsWith("250-ServiceID="))
+                    {
+                        serviceId = line.Substring(14).Trim();
+                    }
+                    else if (line.StartsWith("250-PrivateKey="))
+                    {
+                        string pk = line.Substring(15).Trim();
+                        if (pk.StartsWith("ED25519-V3:"))
+                        {
+                            newKeyBase64 = pk.Substring(11).Trim();
+                        }
+                    }
+                    else if (line.StartsWith("250 OK"))
+                    {
+                        break;
+                    }
+                    else if (line.StartsWith("5")) // Error
+                    {
+                        Log($"[FATAL] ADD_ONION failed: {line}", LogLevel.Error);
+                        return;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(serviceId))
+                {
+                    OnionAddress = serviceId;
+                    if (!string.IsNullOrEmpty(newKeyBase64))
+                    {
+                        GeneratedKey = new SecureRamKey(Convert.FromBase64String(newKeyBase64));
+                    }
+                    
+                    OnReady?.Invoke(OnionAddress);
+                    Log($"Onion address generated: {OnionAddress}");
+                }
+                else
+                {
+                    Log("[FATAL] Did not receive ServiceID from ADD_ONION.", LogLevel.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[FATAL] ControlPort connection failed: {ex.Message}", LogLevel.Error);
+            }
         }
 
         public void Stop()
@@ -258,24 +311,16 @@ namespace Chat
             {
                 if (_torProcess is { HasExited: false })
                 {
-                    Log($"Tor process PID={_torProcess.Id} is active. Terminating process...");
                     try
                     {
                         _torProcess.Kill();
-                        Log("Process kill called. Waiting for process exit...");
                         _torProcess.WaitForExit();
-                        Log("Tor process exited.");
                     }
                     catch (Exception ex)
                     {
                         Log($"[ERROR] Failed to kill Tor process: {ex.Message}", LogLevel.Error);
                     }
                 }
-                else
-                {
-                    Log("Tor process is null or already exited.");
-                }
-                Log("Preserving DataDir cache for fast circuit bootstrap.");
             }
             catch (Exception ex)
             {
@@ -287,37 +332,18 @@ namespace Chat
 
         private static int AllocatePort()
         {
-            Log("[START] AllocatePort started.");
-
             var policy = Policy
                 .Handle<SocketException>()
-                .WaitAndRetry(4, attempt => TimeSpan.FromMilliseconds(100 * attempt),
-                    (ex, span, attempt, ctx) =>
-                    {
-                        Log($"[RETRY] AllocatePort attempt {attempt} failed: {ex.Message}", LogLevel.Warning);
-                    });
+                .WaitAndRetry(4, attempt => TimeSpan.FromMilliseconds(100 * attempt));
 
-            try
+            return policy.Execute(() =>
             {
-                return policy.Execute(() =>
-                {
-                    Log("Creating TcpListener on IPAddress.Loopback port 0...");
-                    var listener = new TcpListener(IPAddress.Loopback, 0);
-                    listener.Start();
-                    Log($"TcpListener started on LocalEndpoint={listener.LocalEndpoint}");
-                    int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-                    Log($"Extracted port: {port}. Stopping listener...");
-                    listener.Stop();
-                    Log("TcpListener stopped.");
-                    Log($"[END] AllocatePort returning port {port}");
-                    return port;
-                });
-            }
-            catch (Exception ex)
-            {
-                Log($"[FATAL] AllocatePort failed after retries: {ex.GetType().Name} - {ex.Message}", LogLevel.Error);
-                throw;
-            }
+                var listener = new TcpListener(IPAddress.Loopback, 0);
+                listener.Start();
+                int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                listener.Stop();
+                return port;
+            });
         }
     }
 }

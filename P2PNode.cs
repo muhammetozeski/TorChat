@@ -58,6 +58,7 @@ namespace Chat
 
         public ConcurrentDictionary<string, PeerInfo> KnownPeers { get; } = new();
         public string? MyOnion => _tor?.OnionAddress;
+        public SecureRamKey? GeneratedKey => _tor?.GeneratedKey;
         public PeerInfo MyProfile { get; private set; } = new() { IsOnline = true, Bio = "Merhaba!" };
         public DateTime? ConnectedAt { get; private set; }
 
@@ -67,7 +68,7 @@ namespace Chat
 
         // --- Lifecycle ---
 
-        public async Task StartAsync()
+        public async Task StartAsync(SecureRamKey? secretKey)
         {
             Log("[START] P2PNode.StartAsync started.");
 
@@ -121,7 +122,7 @@ namespace Chat
                 };
 
                 Log("Starting TorManager asynchronously via StartAsync()...");
-                await _tor.StartAsync();
+                await _tor.StartAsync(secretKey);
                 Log("[END] TorManager.StartAsync() completed.");
             }
             catch (Exception ex)
@@ -134,7 +135,7 @@ namespace Chat
         private async Task MeshMaintainerLoopAsync()
         {
             Log("[START] MeshMaintainerLoopAsync started.");
-            var loopPolicy = AppResiliencePolicies.CreateLoopRetryPolicy("MeshMaintainer", Log);
+            var loopPolicy = AppResiliencePolicies.CreateLoopRetryPolicy("MeshMaintainer", msg => Log(msg));
 
             while (_tor != null)
             {
@@ -245,7 +246,7 @@ namespace Chat
         {
             Log("[START] AcceptConnectionsAsync started.");
 
-            var loopPolicy = AppResiliencePolicies.CreateLoopRetryPolicy("AcceptConnections", Log);
+            var loopPolicy = AppResiliencePolicies.CreateLoopRetryPolicy("AcceptConnections", msg => Log(msg));
 
             while (_listener != null)
             {
@@ -781,7 +782,6 @@ namespace Chat
                 {
                     if (peer.OnionAddress != MyOnion)
                     {
-                        peer.IsOnline = true;
                         Log($"ReconnectAsync: Connecting to '{peer.OnionAddress}'...");
                         _ = ConnectToPeerAsync(peer.OnionAddress);
                     }

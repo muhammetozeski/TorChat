@@ -1,15 +1,14 @@
+#pragma warning disable CA1050 // Ad alanlarında türleri bildirin
 global using static Logger;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#pragma warning disable CA1050 // Ad alanlarında türleri bildirin
 public static class Logger
-#pragma warning restore CA1050 // Ad alanlarında türleri bildirin
 {
     // bu projede logger publish'den önce kapatılmalıdır
     /// <summary> enable or disable logging by changing this </summary>
-    static int _activateLogging = 1; // AppConstants.TestBuild kaldırıldığı için varsayılan olarak aktif
+    static int _activateLogging = 1; 
     public static bool ActivateLogging
     {
         get => Interlocked.CompareExchange(ref _activateLogging, 0, 0) == 1;
@@ -20,8 +19,8 @@ public static class Logger
 
     static ConsoleColor LogColor = ConsoleColor.Gray;
 
-    static readonly Action<object?> WriteLine = static (o) => Debug.WriteLine(o);
-    static readonly Action<object?> Write = static (o) => Debug.Write(o);
+    static readonly Action<object?> WriteLine = static (o) => { Debug.WriteLine(o); Console.WriteLine(o); };
+    static readonly Action<object?> Write = static (o) => { Debug.Write(o); Console.Write(o); };
 
 
     // Eğer dinamik olarak değistirmen gerekirse Const olmaktan çıkartabilirsin, bunu yapmak güvenli.
